@@ -3,7 +3,7 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { getMyOrders, cancelOrder } from "../api";
+import { getMyOrders, cancelOrder, getImageUrl } from "../api";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -153,10 +153,11 @@ export default function Orders() {
                     >
                       <div className="flex items-center gap-3">
                         <img
-                          src={`http://localhost:8000/storage/${item.product_image}`}
+                          src={getImageUrl(item.product_image)}
                           alt={item.product_name}
                           className="w-14 h-14 object-cover rounded"
                         />
+
                         <div>
                           <p className="font-medium">{item.product_name}</p>
                           <p className="text-sm text-gray-500">

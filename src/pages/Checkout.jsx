@@ -3,7 +3,7 @@ import { useCart } from "../context/CartContext";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Link, useNavigate } from "react-router-dom";
-import { orderAPI, couponAPI } from "../api";
+import { orderAPI, couponAPI, getImageUrl } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -615,7 +615,7 @@ function Checkout() {
                                     {cart.map((item) => (
                                         <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl">
                                             <img
-                                                src={item.image ? `http://localhost:8000/storage/${item.image}` : "https://via.placeholder.com/60"}
+                                                src={getImageUrl(item.image)}
                                                 alt={item.name}
                                                 className="w-16 h-16 object-cover rounded-lg"
                                             />

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Swal from "sweetalert2";
-import api from "../api";
+import api, { getImageUrl } from "../api";
 
 export default function OrderDetail() {
   const { id } = useParams();
@@ -201,13 +201,14 @@ export default function OrderDetail() {
               {order.items?.map((item) => (
                 <div key={item.id} className="flex items-center gap-4 bg-gray-50 p-4 rounded-lg">
                   <img
-                    src={`http://localhost:8000/storage/${item.product_image}`}
+                    src={getImageUrl(item.product_image)}
                     alt={item.product_name}
                     className="w-20 h-20 object-cover rounded-lg"
                     onError={(e) => {
                       e.target.src = "https://via.placeholder.com/80?text=No+Image";
                     }}
                   />
+
                   <div className="flex-1">
                     <h4 className="font-semibold text-gray-800">{item.product_name}</h4>
                     <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>

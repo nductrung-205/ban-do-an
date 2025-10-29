@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { changePassword, getMyOrders, updateProfile } from "../api"; // Đảm bảo 'api' chứa hàm getMyOrders
+import { changePassword, getImageUrl, getMyOrders, updateProfile } from "../api"; // Đảm bảo 'api' chứa hàm getMyOrders
 import Swal from "sweetalert2"; // Import Swal
 
 export default function Profile() {
@@ -74,7 +74,7 @@ export default function Profile() {
       console.error("❌ Lỗi tải đơn hàng trong Profile:", error);
       Swal.fire("Lỗi", "Không thể tải danh sách đơn hàng của bạn.", "error"); // Thông báo lỗi cho người dùng
       setOrders([]); // Đảm bảo orders luôn là mảng khi có lỗi
-      setStats({ totalOrders: 0, totalSpent: 0, pendingOrders: 0, completedOrders: 0, cancelledOrders:0 }); // Reset stats
+      setStats({ totalOrders: 0, totalSpent: 0, pendingOrders: 0, completedOrders: 0, cancelledOrders: 0 }); // Reset stats
     } finally {
       setLoading(false);
     }
@@ -394,13 +394,14 @@ export default function Profile() {
                         {(order.items && Array.isArray(order.items) ? order.items : []).slice(0, 2).map((item) => (
                           <div key={item.id} className="flex items-center gap-3 text-sm">
                             <img
-                              src={`http://localhost:8000/storage/${item.product_image}`}
+                              src={getImageUrl(item.product_image)}
                               alt={item.product_name}
                               className="w-12 h-12 object-cover rounded-lg"
                               onError={(e) => {
                                 e.target.src = "https://via.placeholder.com/48?text=No+Image";
                               }}
                             />
+
                             <div className="flex-1">
                               <p className="font-medium text-gray-800">{item.product_name}</p>
                               <p className="text-gray-500">SL: {item.quantity}</p>

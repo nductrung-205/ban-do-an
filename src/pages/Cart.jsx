@@ -3,6 +3,7 @@ import { useCart } from "../context/CartContext";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Link, useNavigate } from "react-router-dom";
+import { getImageUrl } from "../api";
 
 function Cart() {
     const navigate = useNavigate();
@@ -163,7 +164,7 @@ function Cart() {
                                                 <div className="flex-shrink-0 relative">
                                                     {item.image ? (
                                                         <img
-                                                            src={`http://localhost:8000/storage/${item.image}`}
+                                                            src={getImageUrl(item.image)}
                                                             alt={item.name}
                                                             className="w-28 h-28 object-cover rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300"
                                                             onError={(e) => {

@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { getImageUrl } from "../api";
 
 function OrderSuccess() {
     const location = useLocation();
@@ -126,10 +127,11 @@ function OrderSuccess() {
                                                 <div className="flex items-center gap-2">
                                                     {item.product_image && (
                                                         <img
-                                                            src={`http://localhost:8000/storage/${item.product_image}`}
+                                                            src={getImageUrl(item.product_image)}
                                                             alt={item.product_name}
                                                             className="w-10 h-10 object-cover rounded-md"
                                                         />
+
                                                     )}
                                                     <span className="font-medium text-gray-800">{item.product_name} x {item.quantity}</span>
                                                 </div>
