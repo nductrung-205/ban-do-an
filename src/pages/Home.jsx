@@ -3,7 +3,7 @@ import { productAPI } from "../api";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Carousel from "../components/Carousel";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 
 function Home() {
@@ -11,7 +11,7 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const navigate = useNavigate();
-  const location = useLocation();
+ 
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -25,7 +25,7 @@ function Home() {
       }
     };
     fetchProducts();
-  }, [location]);
+  }, []);
 
   const featuredProducts = products.slice(0, 8);
 
