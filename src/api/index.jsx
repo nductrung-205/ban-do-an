@@ -66,6 +66,16 @@ export const productAPI = {
   toggleStatus: (id) => api.put(`/admin/products/${id}/toggle-status`),
   bulkDelete: (ids) => api.post('/admin/products/bulk-delete', { ids }),
   getByCategory: (categoryId) => api.get(`/categories/${categoryId}/products`),
+
+  importProducts: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/admin/products/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
 };
 
 // ==================== ORDERS ====================
@@ -142,6 +152,29 @@ export const reviewAPI = {
   toggle: (id) => api.put(`/admin/reviews/${id}/toggle`),
 };
 
+export const notificationAPI = {
+  getAll: () => api.get("/notifications"),
+  markAsRead: (id) => api.put(`/notifications/${id}/read`),
+  delete: (id) => api.delete(`/notifications/${id}`),
+  create: (data) => api.post("/notifications", data),
+  getUnreadCount: () => api.get("/notifications/unread-count"),
 
+  getAllAdmin: (params) => api.get("/admin/notifications/all", { params }), // Lấy TẤT CẢ thông báo (cho admin)
+  createAdmin: (data) => api.post("/admin/notifications", data), // Admin tạo thông báo cho user cụ thể
+  updateAdmin: (id, data) => api.put(`/admin/notifications/${id}`, data), // Admin sửa thông báo
+  deleteAdmin: (id) => api.delete(`/admin/notifications/${id}`), // Admin xóa thông báo
+  toggleReadStatusAdmin: (id) => api.put(`/admin/notifications/${id}/toggle-read`), // Admin chuyển đổi trạng thái đọc
+  sendToAllUsersAdmin: (data) => api.post("/admin/notifications/send-to-all", data),
+};
+
+export const vnpayAPI = {
+  createPayment: (data) => api.post('/vnpay/create-payment', data),
+};
+
+export const momoAPI = {
+  // Nhận một đối tượng chứa amount và your_internal_order_id
+  createPayment: (data) => api.post('/momo/create-payment', data),
+  transactionStatus: (orderId) => api.get(`/momo/status/${orderId}`),
+};
 
 export default api;

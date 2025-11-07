@@ -220,6 +220,7 @@ export default function Dashboard() {
           <NavItem icon={<MessageSquare  />} label="Đánh giá" onClick={() => navigate("/admin/reviews")} collapsed={!sidebarOpen} />
           <NavItem icon={<Tag  />} label="Giảm giá" onClick={() => navigate("/admin/coupons")} collapsed={!sidebarOpen} />
           <NavItem icon={<Folder  />} label="Danh mục" onClick={() => navigate("/admin/categories")} collapsed={!sidebarOpen} />
+          <NavItem icon={<Bell  />} label="Thông báo" onClick={() => navigate("/admin/notifications")} collapsed={!sidebarOpen} />
         </nav>
         
         <div className="absolute bottom-4 w-full px-4">
@@ -246,11 +247,7 @@ export default function Dashboard() {
               {new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="relative p-3 hover:bg-gray-100 rounded-full transition">
-              <Bell size={22} className="text-gray-600" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+          <div className="flex items-center gap-4">            
             <div className="flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 text-white px-4 py-2 rounded-full">
               <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold text-sm">
                 {user?.fullname?.[0] || "A"}

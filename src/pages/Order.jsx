@@ -3,11 +3,11 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
-import { getMyOrders, cancelOrder, getImageUrl } from "../api";
+import { getMyOrders, cancelOrder, getImageUrl, notificationAPI } from "../api";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = true;
+  const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
@@ -15,6 +15,7 @@ export default function Orders() {
       try {
         setLoading(true);
         const res = await getMyOrders();
+        console.log("📦 API trả về:", res);
         let fetchedData = [];
 
         if (res.data && typeof res.data === 'object' && res.data.data !== undefined) {
@@ -23,7 +24,7 @@ export default function Orders() {
           fetchedData = res.data;
         }
 
-        setOrders(Array.isArray(fetchedData) ? fetchedData.reverse() : []);
+        setOrders(Array.isArray(fetchedData) ? fetchedData : []);
         console.log("✅ Orders loaded:", fetchedData);
       } catch (err) {
         console.error("❌ Lỗi tải đơn hàng:", err);
@@ -51,6 +52,11 @@ export default function Orders() {
         try {
           setCancellingId(id);
           await cancelOrder(id);
+          await notificationAPI.create({
+            title: "Đơn hàng đã được hủy ❌",
+            message: `Bạn đã hủy đơn hàng ${id}.`,
+            type: "order_cancel",
+          });
           Swal.fire("Thành công", "Đơn hàng đã được hủy.", "success");
 
           // Bắt đầu thay đổi ở đây:

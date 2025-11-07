@@ -5,19 +5,32 @@ import Footer from "../components/Footer";
 import Carousel from "../components/Carousel";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import Chatbot from "../components/Chatbot";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const navigate = useNavigate();
- 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const productsPerPage = 10;
+
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await productAPI.getAll();
-        setProducts(res.data?.data || res.data || []);
+        setLoading(true);
+        const params = {
+          page: currentPage,
+          per_page: productsPerPage,         
+        };
+        const res = await productAPI.getAll(params); 
+
+        setProducts(res.data?.data || []);
+        setTotalPages(res.data?.pagination?.last_page || 1);
+        setCurrentPage(res.data?.pagination?.current_page || 1); 
       } catch (error) {
         console.error("❌ Lỗi tải sản phẩm:", error);
       } finally {
@@ -25,9 +38,7 @@ function Home() {
       }
     };
     fetchProducts();
-  }, []);
-
-  const featuredProducts = products.slice(0, 8);
+  }, [currentPage]);
 
 
 
@@ -77,7 +88,7 @@ function Home() {
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {[...Array(8)].map((_, i) => (
+              {[...Array(productsPerPage)].map((_, i) => ( // Render số lượng skeleton khớp với productsPerPage
                 <div key={i} className="bg-white rounded-2xl shadow-md animate-pulse">
                   <div className="w-full h-48 bg-gray-200 rounded-t-2xl"></div>
                   <div className="p-4 space-y-3">
@@ -87,59 +98,85 @@ function Home() {
                 </div>
               ))}
             </div>
-          ) : featuredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((p) => (
-                <div
-                  key={p.id}
-                  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 group overflow-hidden"
-                >
-                  <Link to={`/products/${p.id}`} className="block relative overflow-hidden">
-                    <img
-                      src={p.image_url || "https://via.placeholder.com/60"}
-                      alt={p.name}
-                      className="w-full h-48 object-cover group-hover:scale-110 transition duration-500"
-                    />
+          ) : products.length > 0 ? ( // Sử dụng `products` trực tiếp
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {products.map((p) => ( // Map qua `products`
+                  <div
+                    key={p.id}
+                    className="bg-white rounded-2xl shadow-md hover:shadow-xl transition duration-300 group overflow-hidden"
+                  >
+                    <Link to={`/products/${p.id}`} className="block relative overflow-hidden">
+                      <img
+                        src={p.image_url || "https://via.placeholder.com/60"}
+                        alt={p.name}
+                        className="w-full h-48 object-cover group-hover:scale-110 transition duration-500"
+                      />
 
-                    {p.is_hot && (
-                      <div className="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                        Hot
-                      </div>
-                    )}
-                  </Link>
-
-                  <div className="p-4">
-                    <Link to={`/products/${p.id}`}>
-                      <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-orange-600 transition line-clamp-1">
-                        {p.name}
-                      </h3>
+                      {/* Giả định có trường `is_hot` trong Product model */}
+                      {p.is_hot && (
+                        <div className="absolute top-3 right-3 bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                          Hot
+                        </div>
+                      )}
                     </Link>
 
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-orange-600 font-bold text-xl">
-                        {Number(p.price).toLocaleString()}₫
-                      </p>
-                      <div className="flex items-center gap-1 text-yellow-500">
-                        <span>⭐</span>
-                        <span className="text-sm text-gray-600 font-semibold">
-                          {p.rating || "4.8"}
-                        </span>
-                      </div>
-                    </div>
+                    <div className="p-4">
+                      <Link to={`/products/${p.id}`}>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-orange-600 transition line-clamp-1">
+                          {p.name}
+                        </h3>
+                      </Link>
 
-                    <button
-                      className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:shadow-lg transition transform hover:scale-105 font-semibold"
-                      onClick={() => {
-                        addToCart({ ...p, quantity: 1 });
-                        navigate("/cart");
-                      }}
-                    >
-                      🛒 Thêm vào giỏ
-                    </button>
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-orange-600 font-bold text-xl">
+                          {Number(p.price).toLocaleString()}₫
+                        </p>
+                        <div className="flex items-center gap-1 text-yellow-500">
+                          <span>⭐</span>
+                          <span className="text-sm text-gray-600 font-semibold">
+                            {p.rating || "4.8"} {/* Giả định có trường `rating` */}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button
+                        className="w-full py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl hover:shadow-lg transition transform hover:scale-105 font-semibold"
+                        onClick={() => {
+                          addToCart({ ...p, quantity: 1 });
+                          navigate("/cart");
+                        }}
+                      >
+                        🛒 Thêm vào giỏ
+                      </button>
+                    </div>
                   </div>
+                ))}
+              </div>
+
+              {/* --- Pagination Controls --- */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-4 mt-10">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <span className="text-lg font-semibold text-gray-700">
+                    Trang {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           ) : (
             <p className="text-center text-gray-500">Không có sản phẩm nào để hiển thị.</p>
           )}
@@ -185,6 +222,7 @@ function Home() {
       </main>
 
       <Footer />
+      <Chatbot />
     </div>
   );
 }

@@ -97,11 +97,24 @@ export default function AdminOrders() {
     fetchOrders(); // Kích hoạt lại fetchOrders với các state filter mới
   };
 
-  const handleStatusChange = async (id, newStatus) => {
+  const handleStatusChange = async (order, newStatus) => {
+    const id = order.id;
+    let statusToUpdate = newStatus; // Mặc định là trạng thái mới được chọn
+    let statusChangedMessage = ''; // Thông báo bổ sung
+
+    // LOGIC MỚI: Nếu phương thức thanh toán là Chuyển khoản (Banking),
+    // TỰ ĐỘNG CẬP NHẬT TRẠNG THÁI LÀ "Đã giao" (delivered)
+    if (order.payment_method !== "COD") {
+      if (newStatus !== "delivered") {
+        statusToUpdate = "delivered";
+        statusChangedMessage = `(Tự động chuyển thành 'Đã giao' do PTTT là Chuyển khoản)`;
+      }
+    }
+
     try {
-      await orderAPI.updateStatus(id, newStatus);
+      await orderAPI.updateStatus(id, statusToUpdate);
       fetchOrders();
-      showMessage("success", `✅ Cập nhật trạng thái đơn hàng #${id} thành công!`);
+      showMessage("success", `✅ Cập nhật trạng thái đơn hàng #${id} thành công! ${statusChangedMessage}`);
     } catch (err) {
       console.error("Error updating status:", err);
       const errorMessage = err.response?.data?.message || "❌ Cập nhật trạng thái thất bại!";
@@ -336,7 +349,7 @@ export default function AdminOrders() {
             >
               <option value="all">Tất cả PTTT</option>
               <option value="COD">COD</option>
-              <option value="Banking">Chuyển khoản</option>
+              <option value="BANK_TRANSFER">Chuyển khoản</option> 
             </select>
 
             <div className="flex items-center gap-2 w-full md:w-auto">

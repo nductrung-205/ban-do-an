@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { getImageUrl } from "../api";
+import { getImageUrl, notificationAPI } from "../api";
 
 function OrderSuccess() {
     const location = useLocation();
@@ -14,6 +14,16 @@ function OrderSuccess() {
         console.log('Coupon code:', order.coupon_code);
         console.log('Coupon code type:', typeof order.coupon_code);
         console.log('Discount amount:', order.discount_amount);
+    }, [order]);
+
+    useEffect(() => {
+        if (order) {
+            notificationAPI.create({
+                title: "Đặt hàng thành công 🎉",
+                message: `Đơn hàng ${order.order_code || order.id} đã được tạo thành công.`,
+                type: "order_success",
+            });
+        }
     }, [order]);
 
     // Helper function to format price

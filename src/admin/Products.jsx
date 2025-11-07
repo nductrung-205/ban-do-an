@@ -20,6 +20,9 @@ export default function Products() {
     const [deleteId, setDeleteId] = useState(null);
     const [notification, setNotification] = useState(null);
     const [filteredProducts, setFilteredProducts] = useState([]);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importFile, setImportFile] = useState(null);
+    const [importErrors, setImportErrors] = useState([]);
 
 
     useEffect(() => {
@@ -29,31 +32,44 @@ export default function Products() {
     const fetchProducts = async () => {
         try {
             setLoading(true);
-
             const token = localStorage.getItem("token");
 
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/products`, {
+            // Xây dựng params cho request
+            const params = new URLSearchParams({
+                page: currentPage,
+                per_page: 10, // Hoặc một giá trị khác bạn muốn
+            });
+
+            if (searchTerm) {
+                params.append('search', searchTerm);
+            }
+            if (categoryFilter) {
+                params.append('category_id', categoryFilter);
+            }
+            if (statusFilter !== "") { // Chú ý: "0" là false, "" là không filter
+                params.append('status', statusFilter);
+            }
+            // Thêm các filter khác nếu cần (min_price, max_price, low_stock, sort_by, sort_order)
+
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/admin/products?${params.toString()}`, {
                 headers: {
                     Authorization: token ? `Bearer ${token}` : "",
                     Accept: "application/json",
                 },
             });
 
-
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const result = await response.json();
 
-            console.log("API result:", result); // 👈 kiểm tra lại nếu cần
+            console.log("API result:", result);
 
-            // ✅ vì 'data' là mảng trực tiếp
             setProducts(result.data || []);
-
-            setFilteredProducts(result.data || []);
-
-            // ✅ pagination nằm ngoài 'data'
+            setFilteredProducts(result.data || []); // Cần xem xét lại logic này, có thể không cần filteredProducts riêng nếu API đã filter
             if (result.pagination) {
+                setCurrentPage(result.pagination.current_page); // Cập nhật lại currentPage từ phản hồi của API
                 setTotalPages(result.pagination.last_page || 1);
             }
+
         } catch (error) {
             console.error("Fetch error:", error);
             showNotification("Không thể tải danh sách sản phẩm", "error");
@@ -150,6 +166,43 @@ export default function Products() {
         );
     }
 
+    const handleFileChange = (e) => {
+        setImportFile(e.target.files[0]);
+        setImportErrors([]); // Clear previous errors
+    };
+
+    const handleImportSubmit = async (e) => {
+        e.preventDefault();
+        if (!importFile) {
+            showNotification("Vui lòng chọn một file Excel để nhập.", "error");
+            return;
+        }
+
+        setLoading(true); // Show loading spinner
+        setImportErrors([]); // Clear previous errors
+
+        try {
+            const response = await productAPI.importProducts(importFile);
+            if (response.data.success) {
+                showNotification("Nhập sản phẩm từ Excel thành công!", "success");
+                setShowImportModal(false);
+                setImportFile(null);
+                fetchProducts(); // Refresh product list
+            }
+        } catch (error) {
+            console.error("Import error:", error);
+            const errorData = error.response?.data;
+            if (errorData?.errors && Array.isArray(errorData.errors)) {
+                setImportErrors(errorData.errors);
+                showNotification("Có lỗi xảy ra khi nhập file. Vui lòng xem chi tiết lỗi.", "error");
+            } else {
+                showNotification(errorData?.message || "Lỗi không xác định khi nhập sản phẩm từ Excel.", "error");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 p-6">
             {/* Notification */}
@@ -171,6 +224,13 @@ export default function Products() {
                         </h1>
                         <p className="text-gray-500 mt-2">Quản lý danh sách sản phẩm trong hệ thống</p>
                     </div>
+                    <button
+                        onClick={() => setShowImportModal(true)}
+                        className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition"
+                    >
+                        <Plus size={20} />
+                        Nhập Excel
+                    </button>
                     <button
                         onClick={() => navigate("/admin/products/add")}
                         className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition"
@@ -408,6 +468,72 @@ export default function Products() {
                     ← Trở về Dashboard
                 </button>
             </div>
+            {/* Import Products Modal */}
+            {showImportModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <Package className="text-blue-500" size={24} />
+                                Nhập sản phẩm từ Excel
+                            </h3>
+                            <button onClick={() => setShowImportModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <p className="text-gray-600 mb-4">
+                            Vui lòng tải lên file Excel (.xlsx, .xls, .csv) chứa danh sách sản phẩm.
+                            <br />
+                            <a
+                                href="/templates/product_import_template.xlsx" // Cần tạo file template này
+                                download
+                                className="text-blue-500 hover:underline mt-2 inline-block"
+                            >
+                                Tải file mẫu Excel
+                            </a>
+                        </p>
+
+                        <form onSubmit={handleImportSubmit}>
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls,.csv"
+                                onChange={handleFileChange}
+                                className="w-full text-gray-700 bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 mb-4 focus:ring-blue-500 focus:border-blue-500"
+                            />
+
+                            {importErrors.length > 0 && (
+                                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                                    <p className="font-bold">Lỗi nhập liệu:</p>
+                                    <ul className="list-disc list-inside mt-2">
+                                        {importErrors.map((error, index) => (
+                                            <li key={index}>
+                                                Dòng {error.row}: {error.errors.join(', ')} (Giá trị: {JSON.stringify(error.values)})
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowImportModal(false)}
+                                    className="px-5 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition font-medium"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!importFile || loading}
+                                    className="px-5 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Đang nhập...' : 'Nhập dữ liệu'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

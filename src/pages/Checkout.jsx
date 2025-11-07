@@ -3,10 +3,16 @@ import { useCart } from "../context/CartContext";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { Link, useNavigate } from "react-router-dom";
-import { orderAPI, couponAPI, getImageUrl } from "../api";
+import { orderAPI, couponAPI, getImageUrl, vnpayAPI, momoAPI } from "../api";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+
+// Import dữ liệu từ các file JSON tĩnh
+import provincesData from "../data/provinces.json";
+import districtsData from "../data/districts.json";
+import wardsData from "../data/wards.json";
+
 function Checkout() {
     const { cart, clearCart } = useCart();
     const navigate = useNavigate();
@@ -23,9 +29,9 @@ function Checkout() {
         name: "",
         email: "",
         phone: "",
-        city: "",
-        district: "",
-        ward: "",
+        city: "", // Tên thành phố
+        district: "", // Tên quận/huyện
+        ward: "", // Tên phường/xã
         address: "",
         type: "Nhà Riêng",
         note: "",
@@ -35,17 +41,21 @@ function Checkout() {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Sử dụng dữ liệu đã import thay vì state rỗng và fetching
     const [provinces, setProvinces] = useState([]);
     const [districts, setDistricts] = useState([]);
     const [wards, setWards] = useState([]);
-    const [loadingLocation, setLoadingLocation] = useState(false);
+
+    // State để lưu trữ ID tạm thời khi người dùng chọn (vì form lưu tên)
+    const [selectedProvinceId, setSelectedProvinceId] = useState("");
+    const [selectedDistrictId, setSelectedDistrictId] = useState("");
+
 
     // --- State cho Coupon ---
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [couponError, setCouponError] = useState("");
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-    // NEW: State để lưu trữ danh sách coupon công khai
     const [availableCoupons, setAvailableCoupons] = useState([]);
     const [loadingCoupons, setLoadingCoupons] = useState(false);
 
@@ -60,34 +70,18 @@ function Checkout() {
         }
     }, [user]);
 
-    // Tải danh sách tỉnh/thành phố
-    useEffect(() => {
-        const fetchProvinces = async () => {
-            try {
-                const res = await fetch("https://provinces.open-api.vn/api/?depth=1");
-                const data = await res.json();
-                setProvinces(data);
-            } catch (err) {
-                console.error("Error loading provinces:", err);
-                toast.error("Không thể tải danh sách Tỉnh/Thành phố.");
-            }
-        };
-        fetchProvinces();
-    }, []);
-
     // NEW: Tải danh sách coupon công khai
     useEffect(() => {
         const fetchAvailableCoupons = async () => {
             setLoadingCoupons(true);
             try {
-                const res = await couponAPI.getAll(); // Sử dụng couponAPI.getAll() nếu nó trả về public coupons
-                // Lọc ra các coupon còn hiệu lực và chưa hết lượt dùng (client-side, backend cũng nên lọc)
+                const res = await couponAPI.getAll();
                 const now = new Date();
                 const filteredCoupons = res.data.data.filter(c => {
                     const validFrom = c.valid_from ? new Date(c.valid_from) : null;
                     const validTo = c.valid_to ? new Date(c.valid_to) : null;
                     const isActive = (!validFrom || now >= validFrom) && (!validTo || now <= validTo);
-                    const hasUsageLeft = c.usage_limit === null || c.usage_limit > 0; // null = unlimited usage
+                    const hasUsageLeft = c.usage_limit === null || c.usage_limit > 0;
 
                     return isActive && hasUsageLeft;
                 });
@@ -102,62 +96,69 @@ function Checkout() {
         fetchAvailableCoupons();
     }, []);
 
+    // Load tất cả tỉnh/thành phố khi component mount
+    useEffect(() => {
+        // Giả sử dữ liệu JSON có cấu trúc là một mảng các đối tượng
+        setProvinces(provincesData);
+    }, []);
 
-    // Load districts based on selected city
-    const loadDistricts = useCallback(async (cityCode) => {
+    // Load districts based on selected province ID from local data
+    const loadDistricts = useCallback((provinceCode) => { // Đổi tên tham số thành provinceCode
         setDistricts([]);
         setWards([]);
         setForm(prevForm => ({ ...prevForm, district: "", ward: "" }));
+        setSelectedDistrictId("");
 
-        if (cityCode) {
-            setLoadingLocation(true);
-            try {
-                const res = await fetch(`https://provinces.open-api.vn/api/p/${cityCode}?depth=2`);
-                const data = await res.json();
-                setDistricts(data.districts);
-            } catch (err) {
-                console.error("Error loading districts:", err);
-                toast.error("Không thể tải danh sách Quận/Huyện.");
-            } finally {
-                setLoadingLocation(false);
-            }
+        if (provinceCode) {
+            // Lọc các quận/huyện có parent_code tương ứng với provinceCode
+            const filteredDistricts = districtsData.filter(d => d.parent_code === provinceCode);
+            setDistricts(filteredDistricts);
         }
     }, []);
 
-    // Load wards based on selected district
-    const loadWards = useCallback(async (districtCode) => {
+    // Load wards based on selected district ID from local data
+    const loadWards = useCallback((districtCode) => { // Đổi tên tham số thành districtCode
         setWards([]);
         setForm(prevForm => ({ ...prevForm, ward: "" }));
 
         if (districtCode) {
-            setLoadingLocation(true);
-            try {
-                const res = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-                const data = await res.json();
-                setWards(data.wards);
-            } catch (err) {
-                console.error("Error loading wards:", err);
-                toast.error("Không thể tải danh sách Phường/Xã.");
-            } finally {
-                setLoadingLocation(false);
-            }
+            // Lọc các phường/xã có parent_code tương ứng với districtCode
+            const filteredWards = wardsData.filter(w => w.parent_code === districtCode);
+            setWards(filteredWards);
         }
     }, []);
 
     const handleCityChange = (e) => {
-        const code = e.target.value;
-        const selectedCity = provinces.find(p => p.code === parseInt(code));
-        setForm(prevForm => ({ ...prevForm, city: selectedCity ? selectedCity.name : "", district: "", ward: "" }));
+        const code = e.target.value; // Lấy 'code' từ option đã chọn
+        setSelectedProvinceId(code); // Lưu 'code' đã chọn
+
+        // Tìm đối tượng tỉnh/thành phố dựa trên 'code'
+        const selectedCity = provinces.find(p => p.code === code);
+
+        setForm(prevForm => ({
+            ...prevForm,
+            city: selectedCity ? selectedCity.name_with_type : "", // Lưu 'name_with_type' vào form.city
+            district: "", // Reset district khi đổi city
+            ward: ""      // Reset ward khi đổi city
+        }));
         setErrors(prevErrors => ({ ...prevErrors, city: "" }));
-        loadDistricts(code);
+        loadDistricts(code); // Truyền 'code' để tải huyện
     };
 
     const handleDistrictChange = (e) => {
-        const code = e.target.value;
-        const selectedDistrictName = districts.find(d => d.code === parseInt(code));
-        setForm(prevForm => ({ ...prevForm, district: selectedDistrictName ? selectedDistrictName.name : "", ward: "" }));
+        const code = e.target.value; // Lấy 'code' từ option đã chọn
+        setSelectedDistrictId(code); // Lưu 'code' đã chọn
+
+        // Tìm đối tượng quận/huyện dựa trên 'code'
+        const selectedDistrict = districts.find(d => d.code === code);
+
+        setForm(prevForm => ({
+            ...prevForm,
+            district: selectedDistrict ? selectedDistrict.name_with_type : "", // Lưu 'name_with_type' vào form.district
+            ward: "" // Reset ward khi đổi district
+        }));
         setErrors(prevErrors => ({ ...prevErrors, district: "" }));
-        loadWards(code);
+        loadWards(code); // Truyền 'code' để tải xã
     };
 
     const handleChange = (e) => {
@@ -179,7 +180,7 @@ function Checkout() {
             couponDiscount = subtotal * (appliedCoupon.discount_percent / 100);
         }
     }
-    couponDiscount = Math.min(couponDiscount, subtotal); // Đảm bảo giảm giá không lớn hơn tổng phụ
+    couponDiscount = Math.min(couponDiscount, subtotal);
 
     const total = subtotal + deliveryFee - couponDiscount;
 
@@ -196,7 +197,7 @@ function Checkout() {
         try {
             const res = await couponAPI.apply({ code: codeToApply });
             setAppliedCoupon(res.data.data);
-            setCouponCode(codeToApply); // Đảm bảo input hiển thị mã đã áp dụng
+            setCouponCode(codeToApply);
             Swal.fire("Thành công!", res.data.message, "success");
         } catch (error) {
             setAppliedCoupon(null);
@@ -215,19 +216,17 @@ function Checkout() {
         Swal.fire("Đã hủy!", "Mã giảm giá đã được gỡ bỏ.", "info");
     };
 
-    // Hàm để sao chép mã và áp dụng
     const handleCopyAndApply = async (code) => {
         try {
             await navigator.clipboard.writeText(code);
             toast.info(`Đã sao chép mã "${code}"`);
-            setCouponCode(code); // Đặt mã vào input
-            await handleApplyCoupon(code); // Áp dụng ngay lập tức
+            setCouponCode(code);
+            await handleApplyCoupon(code);
         } catch (err) {
             console.error("Failed to copy text:", err);
             toast.error("Không thể sao chép mã giảm giá.");
         }
     };
-
 
     // --- Form Validation ---
     const validateForm = useCallback(() => {
@@ -271,7 +270,7 @@ function Checkout() {
                 })),
                 total_price: total,
                 payment_method: form.paymentMethod,
-                coupon_code: appliedCoupon ? appliedCoupon.code : null, // Gửi mã coupon nếu có
+                coupon_code: appliedCoupon ? appliedCoupon.code : null,
                 customer: {
                     name: form.name,
                     email: form.email,
@@ -285,22 +284,56 @@ function Checkout() {
                 }
             };
 
-            console.log("📤 Sending order:", orderPayload);
-            console.log("🎟️ Applied Coupon:", appliedCoupon);
-            console.log("🎟️ Coupon Code in payload:", orderPayload.coupon_code);
-
+            console.log("📤 Sending order to backend for initial creation:", orderPayload);
             const apiResponse = await orderAPI.create(orderPayload);
             const orderData = apiResponse.data.data;
+            const orderId = orderData.id;
 
-            console.log("✅ Order created:", orderData);
-            console.log("🎟️ Coupon Code in response:", orderData.coupon_code);
-            console.log("💰 Discount Amount in response:", orderData.discount_amount);
+            console.log("✅ Order created successfully with ID:", orderId);
 
-            console.log("✅ Order created:", orderData);
-            toast.success("Đặt hàng thành công! Cảm ơn bạn.");
+            if (form.paymentMethod === "VNPay") {
+                console.log("🌐 Initiating VNPay payment for order ID:", orderId);
+                const vnpayResponse = await vnpayAPI.createPayment({
+                    order_id: orderId,
+                    amount: total,
+                });
 
-            clearCart();
-            navigate("/success", { state: { order: apiResponse.data.data } });
+                if (vnpayResponse.data.payment_url) {
+                    console.log("Redirecting to VNPay URL:", vnpayResponse.data.payment_url);
+                    window.location.href = vnpayResponse.data.payment_url;
+                } else {
+                    toast.error("Không thể tạo liên kết thanh toán VNPay.");
+                    console.error("❌ VNPay API did not return a payment_url.");
+                }
+            } else if (form.paymentMethod === "MoMo") {
+                console.log("📱 Initiating MoMo payment for order ID:", orderId);
+
+                try {
+                    // Gửi yêu cầu tới backend thông qua momoAPI
+                    const momoResponse = await momoAPI.createPayment({ // <-- Sửa lỗi 1: Đổi orderAPI.createMoMoPayment thành momoAPI.createPayment
+                        amount: total,
+                        your_internal_order_id: orderId
+                    });
+
+                    if (momoResponse.data && momoResponse.data.payUrl) { // <-- Sửa lỗi 2: Đổi .payUrl thành .payUrl
+                        console.log("Redirecting to MoMo URL:", momoResponse.data.payUrl);
+                        window.location.href = momoResponse.data.payUrl;
+                    } else {
+                        toast.error("Không thể tạo liên kết thanh toán MoMo.");
+                        console.error("❌ MoMo API did not return a payUrl.", momoResponse.data);
+                    }
+                } catch (err) {
+                    console.error("❌ Lỗi khi tạo thanh toán MoMo:", err);
+                    toast.error("Có lỗi xảy ra khi khởi tạo thanh toán MoMo.");
+                }
+            }
+
+            else if (form.paymentMethod === "COD") {
+                console.log("💵 COD payment selected. Order is complete.");
+                toast.success("Đặt hàng thành công! Cảm ơn bạn.");
+                clearCart();
+                navigate("/success", { state: { order: orderData } });
+            }
 
         } catch (error) {
             console.error("❌ Lỗi khi đặt hàng:", error);
@@ -418,24 +451,18 @@ function Checkout() {
                                             </label>
                                             <div className="relative">
                                                 <select
-                                                    value={provinces.find(p => p.name === form.city)?.code || ""}
+                                                    value={selectedProvinceId}
                                                     onChange={handleCityChange}
                                                     className={`w-full border-2 ${errors.city ? 'border-red-500' : 'border-gray-200'} rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all disabled:bg-gray-100`}
                                                     required
-                                                    disabled={loadingLocation}
                                                 >
                                                     <option value="">-- Chọn Tỉnh/TP --</option>
                                                     {provinces.map((p) => (
-                                                        <option key={p.code} value={p.code}>
-                                                            {p.name}
+                                                        <option key={p.code} value={p.code}> {/* <-- Dùng p.code */}
+                                                            {p.name_with_type}
                                                         </option>
                                                     ))}
                                                 </select>
-                                                {loadingLocation && (
-                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                        <span className="animate-spin text-orange-500">⏳</span>
-                                                    </div>
-                                                )}
                                             </div>
                                             {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
                                         </div>
@@ -445,24 +472,19 @@ function Checkout() {
                                             </label>
                                             <div className="relative">
                                                 <select
-                                                    value={districts.find(d => d.name === form.district)?.code || ""}
+                                                    value={selectedDistrictId}
                                                     onChange={handleDistrictChange}
                                                     className={`w-full border-2 ${errors.district ? 'border-red-500' : 'border-gray-200'} rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all disabled:bg-gray-100`}
-                                                    disabled={!districts.length || loadingLocation}
+                                                    disabled={!districts.length}
                                                     required
                                                 >
                                                     <option value="">-- Chọn Quận/Huyện --</option>
                                                     {districts.map((d) => (
-                                                        <option key={d.code} value={d.code}>
-                                                            {d.name}
+                                                        <option key={d.code} value={d.code}> {/* <-- Dùng d.code */}
+                                                            {d.name_with_type}
                                                         </option>
                                                     ))}
                                                 </select>
-                                                {loadingLocation && (
-                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                        <span className="animate-spin text-orange-500">⏳</span>
-                                                    </div>
-                                                )}
                                             </div>
                                             {errors.district && <p className="text-red-500 text-sm mt-1">{errors.district}</p>}
                                         </div>
@@ -473,24 +495,25 @@ function Checkout() {
                                             <div className="relative">
                                                 <select
                                                     name="ward"
-                                                    value={form.ward}
-                                                    onChange={handleChange}
+                                                    // Giá trị của select phải là tên phường/xã trong form
+                                                    value={form.ward} // <-- Sửa chỗ này
+                                                    onChange={(e) => {
+                                                        const selectedWardName = e.target.value;
+                                                        setForm(prevForm => ({ ...prevForm, ward: selectedWardName }));
+                                                        setErrors(prevErrors => ({ ...prevErrors, ward: "" }));
+                                                    }}
                                                     className={`w-full border-2 ${errors.ward ? 'border-red-500' : 'border-gray-200'} rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all disabled:bg-gray-100`}
-                                                    disabled={!wards.length || loadingLocation}
+                                                    disabled={!wards.length}
                                                     required
                                                 >
                                                     <option value="">-- Chọn Phường/Xã --</option>
                                                     {wards.map((w) => (
-                                                        <option key={w.code} value={w.name}>
-                                                            {w.name}
+                                                        // Giá trị của option là name_with_type của phường/xã
+                                                        <option key={w.code} value={w.name_with_type}>
+                                                            {w.name_with_type}
                                                         </option>
                                                     ))}
                                                 </select>
-                                                {loadingLocation && (
-                                                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                                        <span className="animate-spin text-orange-500">⏳</span>
-                                                    </div>
-                                                )}
                                             </div>
                                             {errors.ward && <p className="text-red-500 text-sm mt-1">{errors.ward}</p>}
                                         </div>
@@ -583,21 +606,40 @@ function Checkout() {
                                         <span className="text-green-600 font-bold">Khuyên dùng</span>
                                     </label>
 
-                                    <label className="flex items-center cursor-pointer p-4 bg-gray-50 rounded-xl border-2 border-gray-200 opacity-50 cursor-not-allowed">
+                                    <label className="flex items-center cursor-pointer p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border-2 border-blue-300 hover:shadow-md transition-all">
                                         <div className="flex items-center gap-3">
                                             <input
                                                 type="radio"
                                                 name="paymentMethod"
-                                                value="Banking"
-                                                disabled
-                                                className="w-5 h-5"
+                                                value="VNPay"
+                                                checked={form.paymentMethod === "VNPay"}
+                                                onChange={handleChange}
+                                                className="w-5 h-5 text-blue-600 focus:ring-blue-500"
                                             />
                                             <div>
-                                                <p className="font-bold text-gray-800">🏦 Chuyển khoản ngân hàng</p>
-                                                <p className="text-sm text-gray-600">Tính năng đang phát triển</p>
+                                                <p className="font-bold text-gray-800">🌐 Thanh toán qua VNPay</p>
+                                                <p className="text-sm text-gray-600">Hỗ trợ hầu hết các ngân hàng Việt Nam</p>
                                             </div>
                                         </div>
                                     </label>
+
+                                    <label className="flex items-center cursor-pointer p-4 bg-gradient-to-r from-pink-50 to-pink-100 rounded-xl border-2 border-pink-300 hover:shadow-md transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="radio"
+                                                name="paymentMethod"
+                                                value="MoMo" // Thêm giá trị 'MoMo'
+                                                checked={form.paymentMethod === "MoMo"}
+                                                onChange={handleChange}
+                                                className="w-5 h-5 text-pink-600 focus:ring-pink-500"
+                                            />
+                                            <div>
+                                                <p className="font-bold text-gray-800">📱 Thanh toán qua MoMo</p>
+                                                <p className="text-sm text-gray-600">Quét mã QR hoặc dùng ứng dụng MoMo</p>
+                                            </div>
+                                        </div>
+                                    </label>
+
                                 </div>
                             </div>
                         </div>

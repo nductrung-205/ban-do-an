@@ -29,6 +29,10 @@ import Revenue from './admin/Revenue.jsx';
 import ReviewList from './admin/ReviewList.jsx';
 import Coupons from './admin/Coupons.jsx';
 import Categories from './admin/Categories.jsx';
+import Notifications from './pages/Notifications.jsx';
+import NotificationManagement from './admin/NotificationManagement.jsx';
+import PaymentSuccess from './pages/PaymentSuccess.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
 
 function App() {
   return (
@@ -39,10 +43,12 @@ function App() {
 
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/notifications" element={<Notifications />} />
 
             {/* Protected */}
 
@@ -71,6 +77,11 @@ function App() {
 
             <Route path="/orders/:id" element={
               <ProtectedRoute><OrderDetail />
+              </ProtectedRoute>} />
+
+            <Route path="/payment-success" element={
+              <ProtectedRoute>
+                <PaymentSuccess />
               </ProtectedRoute>} />
 
             {/* Admin */}
@@ -117,13 +128,19 @@ function App() {
               <AdminRoute><ReviewList />
               </AdminRoute>} />
 
-              <Route path="/admin/coupons" element={
+            <Route path="/admin/coupons" element={
               <AdminRoute><Coupons />
               </AdminRoute>} />
 
-              <Route path="/admin/categories" element={
+            <Route path="/admin/categories" element={
               <AdminRoute><Categories />
               </AdminRoute>} />
+
+            <Route path="/admin/notifications" element={
+              <AdminRoute><NotificationManagement />
+              </AdminRoute>} />
+
+
 
 
             <Route path="*" element={<NotFound />} />

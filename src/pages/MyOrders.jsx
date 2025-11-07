@@ -15,6 +15,7 @@ export default function MyOrders() {
       try {
         setLoading(true);
         const res = await getMyOrders();
+        
         let fetchedData = [];
 
         if (res.data && typeof res.data === 'object' && res.data.data !== undefined) {

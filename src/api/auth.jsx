@@ -17,3 +17,7 @@ export const updateProfile = (data) => api.put("/update-profile", data);
 
 // Đổi mật khẩu
 export const changePassword = (data) => api.post("/change-password", data);
+
+export const forgotPasswordRequest = (email) =>  api.post("/forgot-password", { email });
+
+export const resetPasswordRequest = (data) =>  api.post("/reset-password", data);

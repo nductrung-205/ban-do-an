@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { productAPI } from "../api"; // dùng api đã chuẩn hoá
+import { productAPI } from "../api";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { notificationAPI } from "../api";
+
 
 export default function Header() {
     const [keyword, setKeyword] = useState("");
@@ -15,8 +17,34 @@ export default function Header() {
     const { cart } = useCart();
     const { user, logout } = useAuth();
 
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [latestNotifications, setLatestNotifications] = useState([]);
+
     // Tổng số món hàng trong giỏ
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+    // const [notifications, setNotifications] = useState([]);
+    // const [openNoti, setOpenNoti] = useState(false);
+
+    useEffect(() => {
+        if (!user) return;
+        const fetchNotifications = async () => {
+            const res = await notificationAPI.getAll();
+            const data = res.data.data || [];
+            setLatestNotifications(data.slice(0, 3));
+            const unread = data.filter(n => !n.is_read).length;
+            setUnreadCount(unread);
+        };
+        fetchNotifications();
+    }, [user]);
+
+    const handleBellClick = () => {
+        if (!user) {
+            alert("Vui lòng đăng nhập để xem thông báo!");
+            return;
+        }
+        setShowDropdown(!showDropdown);
+    };
 
     // Tải danh sách sản phẩm khi component mount
     useEffect(() => {
@@ -184,6 +212,66 @@ export default function Header() {
                             </span>
                         )}
                     </Link>
+
+                    {user && (
+                        <div className="relative">
+                            <button
+                                onClick={handleBellClick}
+                                className="relative text-2xl text-gray-700 hover:text-orange-500"
+                            >
+                                🔔
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                        {unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {showDropdown && (
+                                <div className="absolute right-0 mt-2 w-72 bg-white border rounded-lg shadow-lg p-4 z-50">
+                                    <h3 className="font-semibold mb-2">Thông báo mới nhất</h3>
+
+                                    {latestNotifications.length === 0 ? (
+                                        <p className="text-gray-500 text-sm">Không có thông báo nào</p>
+                                    ) : (
+                                        <ul className="space-y-2">
+                                            {latestNotifications.map((n) => (
+                                                <li
+                                                    key={n.id}
+                                                    className={`p-2 rounded ${!n.is_read ? "bg-orange-50" : ""}`}
+                                                >
+                                                    <p className="font-medium text-gray-800">{n.title}</p>
+                                                    <p className="text-sm text-gray-600">{n.message}</p>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+
+                                    <div className="p-3 border-t bg-gray-50 text-center">
+                                        <button
+                                            onClick={() => navigate("/notifications")}
+                                            className="mt-3 w-full text-center text-sm text-orange-600 hover:underline"
+                                        >
+                                            Xem tất cả →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {!user && (
+                        <button
+                            onClick={() => alert("Vui lòng đăng nhập để xem thông báo.")}
+                            className={`px-4 py-2 rounded-lg font-medium transition-all
+      ${scrolled
+                                    ? "text-gray-700 hover:bg-orange-50 hover:text-orange-600"
+                                    : "text-white hover:bg-white/20"}`}
+                        >
+                            🔔
+                        </button>
+                    )}
+
 
                     {/* User menu */}
                     {!user ? (

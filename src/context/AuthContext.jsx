@@ -6,6 +6,8 @@ import {
   logoutUser,
   updateProfile,
   changePassword,
+  forgotPasswordRequest, // Import
+  resetPasswordRequest, // Import
 } from "../api/auth";
 
 const AuthContext = createContext();
@@ -25,7 +27,7 @@ export function AuthProvider({ children }) {
     if (token && savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
-        
+
         // ✅ Nếu là admin và có token, set user luôn không cần gọi API
         if (parsedUser.role === 0) {
           setUser(parsedUser);
@@ -90,7 +92,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         setUser(data.user);
-        
+
         console.log("✅ Login successful:", data.user);
         return { success: true, user: data.user };
       }
@@ -140,9 +142,47 @@ export function AuthProvider({ children }) {
       return { success: true, message: res.data.message };
     } catch (error) {
       console.error("❌ Change password failed:", error);
-      return { 
-        success: false, 
-        message: error.response?.data?.message || "Không thể đổi mật khẩu" 
+      return {
+        success: false,
+        message: error.response?.data?.message || "Không thể đổi mật khẩu"
+      };
+    }
+  };
+
+  const forgotPassword = async (email) => {
+    try {
+      const res = await forgotPasswordRequest(email);
+      console.log("✅ Forgot password request sent:", res.data);
+
+      // 👇 Trả thêm dev_reset_url (nếu Laravel có gửi)
+      return {
+        success: true,
+        message: res.data.message,
+        dev_reset_url: res.data.dev_reset_url || null, // 👈 thêm dòng này
+      };
+    } catch (error) {
+      console.error("❌ Forgot password error:", error);
+      return {
+        success: false,
+        message: error.response?.data?.message || "Không thể gửi yêu cầu.",
+      };
+    }
+  };
+
+
+  // ✅ Đặt lại mật khẩu
+  const resetPassword = async (data) => {
+    try {
+      const res = await resetPasswordRequest(data);
+      console.log("✅ Password reset successfully:", res.data.message);
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      console.error("❌ Reset password error:", error);
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Không thể đặt lại mật khẩu. Vui lòng kiểm tra liên kết hoặc email.",
       };
     }
   };
@@ -157,6 +197,8 @@ export function AuthProvider({ children }) {
         logout,
         updateUser,
         changeUserPassword,
+        forgotPassword, // Thêm vào đây
+        resetPassword, // Thêm vào đây
       }}
     >
       {children}

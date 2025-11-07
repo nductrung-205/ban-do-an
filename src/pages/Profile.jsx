@@ -57,7 +57,7 @@ export default function Profile() {
       }
 
       // Đảm bảo fetchedData là một mảng, và sắp xếp theo thứ tự mới nhất trước
-      const data = Array.isArray(fetchedData) ? fetchedData.reverse() : [];
+      const data = Array.isArray(fetchedData) ? fetchedData : [];
       setOrders(data);
 
       // Tính toán thống kê

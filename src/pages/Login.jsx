@@ -2,10 +2,13 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ChefHat, Mail, Lock, ArrowRight, Home } from "lucide-react";
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [rememberMe, setRememberMe] = useState(false);
+
 
   const [form, setForm] = useState({
     email: "",
@@ -13,6 +16,7 @@ export default function Login() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -27,6 +31,14 @@ export default function Login() {
       const result = await login(form);
 
       if (result?.success) {
+
+        if (rememberMe) {
+          localStorage.setItem("rememberEmail", form.email);
+          localStorage.setItem("rememberPassword", form.password);
+        } else {
+          localStorage.removeItem("rememberEmail");
+          localStorage.removeItem("rememberPassword");
+        }
         navigate("/");
       } else {
         setError("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
@@ -38,6 +50,17 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberEmail");
+    const savedPassword = localStorage.getItem("rememberPassword");
+
+    if (savedEmail && savedPassword) {
+      setForm({ email: savedEmail, password: savedPassword });
+      setRememberMe(true);
+    }
+  }, []);
+
 
   return (
     <div className="min-h-screen flex">
@@ -103,6 +126,7 @@ export default function Login() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Mật khẩu
                 </label>
+                
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -128,11 +152,10 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-3 rounded-xl text-white font-semibold transition-all flex items-center justify-center gap-2 ${
-                  loading
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg hover:shadow-xl"
-                }`}
+                className={`w-full py-3 rounded-xl text-white font-semibold transition-all flex items-center justify-center gap-2 ${loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg hover:shadow-xl"
+                  }`}
               >
                 {loading ? (
                   "Đang đăng nhập..."
@@ -143,6 +166,28 @@ export default function Login() {
                   </>
                 )}
               </button>
+
+              {/* Remember me */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center space-x-2 text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 text-orange-500 focus:ring-orange-400 border-gray-300 rounded"
+                  />
+                  <span className="text-sm">Ghi nhớ đăng nhập</span>
+                </label>
+              </div>
+
+              <button
+                  type="button"
+                  onClick={() => setIsForgotPasswordModalOpen(true)} // Mở modal khi click
+                  className="text-sm text-orange-500 hover:text-orange-600 font-medium transition"
+                >
+                  Quên mật khẩu?
+                </button>
+
 
               {/* 🚀 Nút quay lại trang chủ */}
               <button
@@ -178,6 +223,11 @@ export default function Login() {
           </p>
         </div>
       </div>
-    </div>
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={isForgotPasswordModalOpen}
+        onClose={() => setIsForgotPasswordModalOpen(false)}
+      />
+    </div >
   );
 }
