@@ -41,18 +41,12 @@ function Chatbot() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
                 },
-                credentials: 'include', // Quan trọng cho CORS
                 body: JSON.stringify({
                     message: newUserMessage.text,
                     chatHistory: filteredChatHistory
                 }),
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
 
             const data = await response.json();
 
@@ -67,13 +61,10 @@ function Chatbot() {
             });
 
         } catch (error) {
-            console.error("Lỗi chi tiết:", error);
+            console.error("Lỗi khi gửi tin nhắn:", error);
             setMessages((prevMessages) => {
                 const updatedMessages = prevMessages.filter(msg => msg.text !== '...');
-                return [...updatedMessages, {
-                    text: "Xin lỗi, hệ thống tạm thời không khả dụng. Vui lòng thử lại sau.",
-                    sender: 'bot'
-                }];
+                return [...updatedMessages, { text: "Rất tiếc, tôi không thể kết nối hoặc có lỗi từ AI. Vui lòng thử lại sau.", sender: 'bot' }];
             });
         }
     };
@@ -99,7 +90,7 @@ function Chatbot() {
                                 <p className="text-orange-100 text-xs">Trợ lý ảo</p>
                             </div>
                         </div>
-                        <button
+                        <button 
                             onClick={() => setIsOpen(false)}
                             className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-all duration-200 hover:rotate-90"
                         >
@@ -110,14 +101,15 @@ function Chatbot() {
                     {/* Messages */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gradient-to-b from-orange-50/30 to-white">
                         {messages.map((msg, index) => (
-                            <div
-                                key={index}
+                            <div 
+                                key={index} 
                                 className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2`}
                             >
-                                <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm ${msg.sender === 'user'
-                                        ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-br-sm'
+                                <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm ${
+                                    msg.sender === 'user' 
+                                        ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white rounded-br-sm' 
                                         : 'bg-white text-gray-800 rounded-bl-sm border border-gray-100'
-                                    }`}>
+                                }`}>
                                     {msg.text === '...' ? (
                                         <div className="flex gap-1">
                                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -144,7 +136,7 @@ function Chatbot() {
                                 onKeyPress={handleKeyPress}
                                 className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all text-sm"
                             />
-                            <button
+                            <button 
                                 onClick={handleSendMessage}
                                 className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-200 hover:scale-105 active:scale-95"
                             >
@@ -157,7 +149,7 @@ function Chatbot() {
 
             {/* Open Button */}
             {!isOpen && (
-                <button
+                <button 
                     onClick={() => setIsOpen(true)}
                     className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 rounded-full shadow-xl hover:shadow-2xl flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 group animate-in zoom-in-50"
                 >
