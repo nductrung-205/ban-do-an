@@ -22,9 +22,69 @@ export default function Register() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const validateRegister = () => {
+    setError("");
+
+    // Fullname
+    if (!form.fullname) {
+      setError("Vui lòng nhập họ tên.");
+      return false;
+    }
+
+    if (form.fullname.length > 255) {
+      setError("Họ tên không được quá 255 ký tự.");
+      return false;
+    }
+
+    // Email
+    if (!form.email) {
+      setError("Vui lòng nhập email.");
+      return false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setError("Email không hợp lệ.");
+      return false;
+    }
+
+    if (form.email.length > 255) {
+      setError("Email không được quá 255 ký tự.");
+      return false;
+    }
+
+    // Password
+    if (!form.password) {
+      setError("Vui lòng nhập mật khẩu.");
+      return false;
+    }
+
+    if (form.password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return false;
+    }
+
+    if (form.password.length > 64) {
+      setError("Mật khẩu không được vượt quá 64 ký tự.");
+      return false;
+    }
+
+    // Confirm password
+    if (form.password !== form.password_confirmation) {
+      setError("Xác nhận mật khẩu không khớp.");
+      return false;
+    }
+
+    return true;
+  };
+
+
   // Gửi form đăng ký
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateRegister()) return;
+    
     setError("");
     setMessage("");
     setLoading(true);
@@ -84,7 +144,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Nhập họ tên của bạn"
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-400 focus:outline-none"
-              required
+
             />
           </div>
 
@@ -98,7 +158,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Nhập email"
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-400 focus:outline-none"
-              required
+
             />
           </div>
 
@@ -112,7 +172,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Nhập mật khẩu"
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-400 focus:outline-none"
-              required
+
             />
           </div>
 
@@ -126,7 +186,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="Nhập lại mật khẩu"
               className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-orange-400 focus:outline-none"
-              required
+
             />
           </div>
 
@@ -140,11 +200,10 @@ export default function Register() {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2 mt-2 text-white rounded-md transition-all ${
-              loading
+            className={`w-full py-2 mt-2 text-white rounded-md transition-all ${loading
                 ? "bg-orange-300 cursor-not-allowed"
                 : "bg-orange-500 hover:bg-orange-600"
-            }`}
+              }`}
           >
             {loading ? "Đang đăng ký..." : "Đăng ký"}
           </button>

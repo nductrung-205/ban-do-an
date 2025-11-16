@@ -22,8 +22,54 @@ export default function Login() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const validateForm = () => {
+    setError("");
+
+    // Email
+    if (!form.email) {
+      setError("Vui lòng nhập email.");
+      return false;
+    }
+
+    // Email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setError("Email không hợp lệ.");
+      return false;
+    }
+
+    if (form.email.length > 255) {
+      setError("Email không được quá 255 ký tự.");
+      return false;
+    }
+
+    // Password
+    if (!form.password) {
+      setError("Vui lòng nhập mật khẩu.");
+      return false;
+    }
+
+    if (form.password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return false;
+    }
+
+    if (form.password.length > 64) {
+      setError("Mật khẩu không được vượt quá 64 ký tự.");
+      return false;
+    }
+
+    return true;
+  };
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate trước khi gọi API
+    if (!validateForm()) return;
+
     setError("");
     setLoading(true);
 
@@ -31,7 +77,6 @@ export default function Login() {
       const result = await login(form);
 
       if (result?.success) {
-
         if (rememberMe) {
           localStorage.setItem("rememberEmail", form.email);
           localStorage.setItem("rememberPassword", form.password);
@@ -39,6 +84,7 @@ export default function Login() {
           localStorage.removeItem("rememberEmail");
           localStorage.removeItem("rememberPassword");
         }
+
         navigate("/");
       } else {
         setError("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
@@ -50,6 +96,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+
 
   React.useEffect(() => {
     const savedEmail = localStorage.getItem("rememberEmail");
@@ -116,7 +163,7 @@ export default function Login() {
                     onChange={handleChange}
                     placeholder="your.email@example.com"
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                    required
+
                   />
                 </div>
               </div>
@@ -126,7 +173,7 @@ export default function Login() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Mật khẩu
                 </label>
-                
+
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -136,7 +183,7 @@ export default function Login() {
                     onChange={handleChange}
                     placeholder="••••••••"
                     className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition"
-                    required
+
                   />
                 </div>
               </div>
@@ -181,12 +228,12 @@ export default function Login() {
               </div>
 
               <button
-                  type="button"
-                  onClick={() => setIsForgotPasswordModalOpen(true)} // Mở modal khi click
-                  className="text-sm text-orange-500 hover:text-orange-600 font-medium transition"
-                >
-                  Quên mật khẩu?
-                </button>
+                type="button"
+                onClick={() => setIsForgotPasswordModalOpen(true)} // Mở modal khi click
+                className="text-sm text-orange-500 hover:text-orange-600 font-medium transition"
+              >
+                Quên mật khẩu?
+              </button>
 
 
               {/* 🚀 Nút quay lại trang chủ */}

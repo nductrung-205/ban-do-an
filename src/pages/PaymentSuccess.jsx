@@ -61,12 +61,7 @@ function PaymentSuccess() {
           ) : (
             <p className="text-red-500">{errorLoadingOrder}</p>
           )}
-          <Link
-            to="/"
-            className="mt-8 px-10 py-4 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg"
-          >
-            Về trang chủ
-          </Link>
+
         </div>
       ) : (
         <div className="text-center p-8 bg-white rounded-3xl shadow-xl">
@@ -82,7 +77,14 @@ function PaymentSuccess() {
           </Link>
         </div>
       )}
+      <Link
+        to="/"
+        className="mt-8 px-10 py-4 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-2xl hover:shadow-2xl transition-all transform hover:scale-105 font-bold text-lg"
+      >
+        Về trang chủ
+      </Link>
     </div>
+
   );
 }
 

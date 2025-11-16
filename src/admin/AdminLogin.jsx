@@ -17,8 +17,54 @@ export default function AdminLogin() {
     }
   }, [user, navigate]);
 
+  const validateForm = () => {
+    setError("");
+
+    // Email
+    if (!email) {
+      setError("Vui lòng nhập email.");
+      return false;
+    }
+
+    // Email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Email không hợp lệ.");
+      return false;
+    }
+
+    if (email.length > 255) {
+      setError("Email không được quá 255 ký tự.");
+      return false;
+    }
+
+    // Password
+    if (!password) {
+      setError("Vui lòng nhập mật khẩu.");
+      return false;
+    }
+
+    if (password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return false;
+    }
+
+    if (password.length > 64) {
+      setError("Mật khẩu không được vượt quá 64 ký tự.");
+      return false;
+    }
+
+    return true;
+  };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
+
     setError("");
     setLoading(true);
 
@@ -100,7 +146,7 @@ export default function AdminLogin() {
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100"
-              required
+
             />
           </div>
 
@@ -115,7 +161,7 @@ export default function AdminLogin() {
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               className="w-full border-2 border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-gray-100"
-              required
+
             />
           </div>
 
@@ -123,8 +169,8 @@ export default function AdminLogin() {
             type="submit"
             disabled={loading}
             className={`w-full py-3 rounded-xl text-white font-bold text-lg transition transform ${loading
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:scale-105"
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-lg hover:scale-105"
               }`}
           >
             {loading ? (

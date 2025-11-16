@@ -24,7 +24,8 @@ function Home() {
         setLoading(true);
         const params = {
           page: currentPage,
-          per_page: productsPerPage,         
+          per_page: productsPerPage,    
+          status: 1,     
         };
         const res = await productAPI.getAll(params); 
 
