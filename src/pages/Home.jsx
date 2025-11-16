@@ -15,7 +15,7 @@ function Home() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const productsPerPage = 10;
+  const productsPerPage = 12;
 
 
   useEffect(() => {
@@ -57,7 +57,7 @@ function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { name: "Món chính", slug: "mon-chinh", icon: "🍛", color: "from-orange-400 to-red-400" },
-              { name: "Món phụ", slug: "mon-phu", icon: "🍟", color: "from-yellow-400 to-orange-400" },
+              { name: "Đồ ăn nhanh", slug: "do-an-nhanh", icon: "🍟", color: "from-yellow-400 to-orange-400" },
               { name: "Tráng miệng", slug: "trang-mieng", icon: "🍰", color: "from-green-400 to-emerald-400" },
               { name: "Đồ uống", slug: "do-uong", icon: "🍹", color: "from-blue-400 to-cyan-400" },
             ].map((cat) => (

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { productAPI } from "../api";
+import { categoryAPI, productAPI } from "../api";
 
 export default function Menu() {
   const [products, setProducts] = useState([]);
@@ -15,32 +15,26 @@ export default function Menu() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // 🟠 Fetch dữ liệu sản phẩm và danh mục
+  // Trong Menu.js
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await productAPI.getAll();
-        const productsData = Array.isArray(response.data)
-          ? response.data
-          : response.data.data || [];
-
-        setProducts(productsData);
-        setFiltered(productsData);
-
-        // Lấy danh mục duy nhất
-        const categoryMap = new Map();
-        productsData.forEach((p) => {
-          if (p.category && !categoryMap.has(p.category.slug)) {
-            categoryMap.set(p.category.slug, p.category);
-          }
+        const productsRes = await productAPI.getAll({
+          category: selectedCategory,
+          per_page: 999
         });
-        setCategories(Array.from(categoryMap.values()));
+
+        const categoriesRes = await categoryAPI.getAll();
+
+        const productList = productsRes.data.data;
+        const categoryList = categoriesRes.data;
+
+        setProducts(productList);
+        setFiltered(productList);
+        setCategories(categoryList.data);
       } catch (error) {
-        console.error("Lỗi khi tải dữ liệu:", error);
-        setProducts([]);
-        setFiltered([]);
-        setCategories([]);
+        console.error(error);
       } finally {
         setLoading(false);
       }
@@ -48,6 +42,7 @@ export default function Menu() {
 
     fetchData();
   }, []);
+
 
   // 🟢 Lọc và sắp xếp
   useEffect(() => {
